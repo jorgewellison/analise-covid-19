@@ -1,0 +1,8 @@
+"0","plot_regiao <- ggplot(covid_regiao, aes(data, obitosAcumulado)) +"
+"0","  geom_area(aes(fill = regiao)) +"
+"0","  scale_fill_brewer(name = ""Região"", palette = ""Set1"") +"
+"0","  labs(x = ""Dia da notificação"", y = ""Obitos Acumulados"") +"
+"0","  ggtitle(""Obitos acumulados no Brasil"")"
+"0",""
+"0",""
+"0","plot_regiao"

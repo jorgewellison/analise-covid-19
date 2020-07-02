@@ -1,0 +1,121 @@
+---
+title: "Análise da COVID-19"
+author: "Jorge Wellison"
+output:
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+
+library(tidyverse)
+library(ggthemes)
+library(dplyr)
+library(here)
+library(lubridate)
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+# configurações para evitar mostrar mensagens e erros
+knitr::opts_chunk$set(error = FALSE, comment = NA, warning = FALSE, message = FALSE)
+```
+
+```{r include=FALSE}
+covid_br <- read_xlsx("HIST_PAINEL_COVIDBR_30jun2020.xlsx", guess_max = 100000)
+glimpse(covid_br)
+```
+
+```{r include=FALSE}
+covid_br <- covid_br %>%
+  mutate(dia_da_semana = lubridate::wday(data, label = TRUE)) %>%
+  filter(casosAcumulado >= 10000)
+
+glimpse(covid_br)
+```
+
+```{r include=FALSE}
+
+url_estados <- "https://raw.githubusercontent.com/marcuswac/covid-br-data/master/covid-br-ms-states.csv"
+covid_estados <- read_csv(url_estados, col_types = cols(data = col_date()))
+
+glimpse(covid_estados)
+
+```
+
+
+
+```{r include=FALSE}
+covid_regiao <- covid_estados %>%
+  group_by(regiao, data) %>%
+  summarise(casosNovos = sum(casosNovos),
+            casosAcumulado = sum(casosAcumulado),
+            obitosNovos = sum(obitosNovos),
+            obitosAcumulado = sum(obitosAcumulado),
+            populacao = sum(populacaoTCU2019)) %>%
+  filter(data >= lubridate::dmy("01-04-2020")) # dmy:day-month-year
+
+glimpse(covid_regiao)
+```
+
+
+# Descrição da atividade
+
+Essa atividade tem como objetivo analisar dados da COVID-19, para isso usando métodos estatísticos buscando uma fácil compreensão por parte do leitor.
+A análise foi feita com a linguagem de programação R, para o minicurso de análise e visualização de dados da COVID-19, lecionado pelo professor Marcus Carvalho e por Raquel Lopes.
+
+## Brasil
+
+### Casos no Brasil
+```{r}
+ggplot(covid_br, aes(x = data, y = casosNovos)) +
+  geom_col(aes(fill = dia_da_semana), colour = "white") +
+  labs(x = "Dia do óbito", y = "Casos novos") +
+  ggtitle("Casos novos por dia no Brasil") +
+  theme(legend.title = element_blank(), legend.position = c(0.25, 0.9),
+        legend.direction = "horizontal")
+```
+
+
+### Óbitos novos por dia no Brasil
+```{r}
+plot_obitos <- ggplot(covid_br, aes(x = data, y = obitosNovos)) +
+  geom_col(aes(fill = dia_da_semana), colour = "black") +
+  labs(x = "Dia do óbito", y = "Óbitos novos") +
+  ggtitle("Óbitos novos por dia no Brasil") +
+  theme(legend.title = element_blank(), legend.position = c(0.25, 0.9),
+        legend.direction = "horizontal")
+
+plot_obitos + ggthemes::theme_calc()
+```
+
+### Óbitos acumulados no Brasil
+```{r}
+plot_regiao <- ggplot(covid_regiao, aes(data, obitosAcumulado)) +
+  geom_area(aes(fill = regiao)) +
+  scale_fill_brewer(name = "Região", palette = "Set1") +
+  labs(x = "Dia da notificação", y = "Obitos Acumulados") +
+  ggtitle("Obitos acumulados no Brasil")
+
+
+plot_regiao
+```
+
+
+
+## Estados
+
+### Casos nos estados
+  Comparemos a quantidade de casos acumulados nos estados da Paraíba e do Maranhão
+  
+```{r, echo=FALSE}
+casos_estados <- read.csv("https://raw.githubusercontent.com/marcuswac/covid-br-data/master/covid-br-ms-states.csv")
+glimpse(casos_estados) # dplyr, visão geral das colunas e primeiros valores
+summary(casos_estados) # R base, resumo de estatísticas dos valores das colunas
+names(casos_estados) # R base, nome das colunas
+casos_pb_ma <- casos_estados %>% 
+  filter(estado == "PB" | estado == "MA") %>%
+  mutate(data = as.Date(data, format = "%Y-%m-%d"))
+plot2 <- ggplot(casos_pb_ma, aes(x = data, y = casosAcumulado, color = estado)) + geom_line()  
+plot2
+```
